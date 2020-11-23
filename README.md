@@ -16,7 +16,7 @@ SJ_TOKEN=secret key for SuperJob app
 
 ### How to run
 
-A. Fetch a vacancies statistics for developers in Moscow
+Fetch a vacancies statistics for developers in Moscow
 ```
 python main.py
 ```
