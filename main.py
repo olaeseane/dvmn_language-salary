@@ -14,18 +14,18 @@ SJ_MOSCOW_TOWN = 4
 
 
 def predict_rub_salary(salary_from, salary_to):
-    if (salary_from is not None) & (salary_to is not None):
-        return int((salary_from + salary_to) / 2)
-    elif (salary_from is None) | (salary_from == 0):
+    if (not salary_from) | (salary_from == 0):
         return int(salary_to * 0.8)
-    elif (salary_to is None) | (salary_to == 0):
+    elif (not salary_to) | (salary_to == 0):
         return int(salary_from * 1.2)
+    elif salary_from & salary_to:
+        return int((salary_from + salary_to) / 2)
     else:
         return None
 
 
 def predict_rub_salary_for_hh(vacancy):
-    if vacancy["salary"] is None:
+    if not vacancy["salary"]:
         return None
     elif vacancy["salary"]["currency"] != "RUR":
         return None
@@ -72,14 +72,15 @@ def get_hh_vacancies():
             params["page"] = page
             page_response = requests.get(HH_VACANCIES_URL, params=params)
             page_response.raise_for_status()
-            found = page_response.json()["found"]
-            if page >= page_response.json()["pages"] - 1:
+            page_of_vacancies = page_response.json()
+            found = page_of_vacancies["found"]
+            if page >= page_of_vacancies["pages"] - 1:
                 break
-            founded_vacancies += page_response.json()["items"]
+            founded_vacancies += page_of_vacancies["items"]
         vacancies_salary = []
         for vacancy in founded_vacancies:
             rub_salary = predict_rub_salary_for_hh(vacancy)
-            if rub_salary is not None:
+            if rub_salary:
                 vacancies_salary.append(rub_salary)
         vacancies_stats[lang] = {"vacancies_found": found, "vacancies_processed": len(
             vacancies_salary), "average_salary": int(sum(vacancies_salary) / len(vacancies_salary))}
@@ -98,10 +99,11 @@ def get_sj_vacancies():
         params["page"] = page
         response = requests.get(
             SJ_VACANCIES_URL, headers=headers, params=params)
-        for vacancy in response.json()["objects"]:
+        page_of_vacancies = response.json()
+        for vacancy in page_of_vacancies["objects"]:
             founded_vacancies.append(
                 {"profession": vacancy['profession'], "salary": predict_rub_salary_for_sj(vacancy)})
-        if response.json()["more"] != True:
+        if not page_of_vacancies["more"]:
             break
 
     vacancies_stats = {}
@@ -111,7 +113,7 @@ def get_sj_vacancies():
         for vacancy in founded_vacancies:
             if lang in vacancy["profession"]:
                 vacancies_found += 1
-                if vacancy["salary"] is not None:
+                if vacancy["salary"]:
                     vacancies_salary.append(vacancy["salary"])
         average_salary = int(sum(
             vacancies_salary) / len(vacancies_salary)) if len(vacancies_salary) > 0 else None
